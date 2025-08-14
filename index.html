@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCR Workflow Explorer: Sväva & Heidi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A three-part, single-page application designed for clarity and interaction. It starts with a brief intro, followed by a 'Meet the Tools' section with clickable cards for Sväva and Heidi to allow for focused learning and comparison. The core of the app is an 'Interactive Workflow Explorer' where users can select a workflow (e.g., 'Sväva + Heidi', 'Manual') and see a dynamic diagram and a chart update in real-time. This structure was chosen to guide the user from understanding the individual components (the tools) to seeing how they fit into the larger process (the workflows), making the benefits of the new system tangible and easy to grasp. -->
+        - Sväva/Heidi Info -> Goal: Inform/Compare -> Viz: Interactive Cards -> Interaction: Click to expand -> Justification: Allows users to focus on one tool's details at a time, preventing information overload. Method: JS click events.
+        - Workflows -> Goal: Organize/Compare -> Viz: Dynamic Step-by-Step Diagram -> Interaction: Click buttons to switch workflow view -> Justification: Visually represents the process, making the efficiency gains of AI workflows immediately apparent compared to the manual path. Method: JS updates to HTML/CSS.
+        - Time Savings -> Goal: Compare/Inform -> Viz: Bar Chart -> Interaction: Chart updates with workflow selection -> Justification: Quantifies the primary benefit (time saved) in a clear, powerful visual format. Method: Chart.js.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA;
+            color: #212529;
+        }
+        .tool-card {
+            transition: all 0.3s ease-in-out;
+            border-width: 2px;
+        }
+        .tool-card.active {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .workflow-step {
+            transition: all 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .workflow-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .workflow-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        .visual-box {
+            background-color: #F0F2F5;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #4A5568;
+            min-height: 120px; /* Increased height for visuals */
+        }
+        .visual-box .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .heidi-web-visual {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+            width: 80px;
+            height: 80px;
+            background-color: #E2E8F0;
+            border-radius: 8px;
+            position: relative;
+        }
+        .heidi-web-visual div {
+            background-color: #CBD5E0;
+            border-radius: 2px;
+        }
+        .heidi-web-visual .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background-color: #2D3748;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        .pcr-template-mock {
+            width: 100px;
+            height: 70px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .pcr-template-mock .header-bar {
+            height: 15px;
+            background-color: #0000FF; /* Blue like Spotify */
+        }
+        .pcr-template-mock .content-line {
+            height: 6px;
+            background-color: #E2E8F0;
+            margin: 4px 8px;
+            border-radius: 2px;
+        }
+        .pcr-template-mock .content-line:nth-child(2) { width: 80%; }
+        .pcr-template-mock .content-line:nth-child(3) { width: 90%; }
+        .pcr-template-mock .content-line:nth-child(4) { width: 70%; }
+        
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight">A New Era of Post-Campaign Reporting</h1>
+            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Introducing the **brand new AI assistant, Sväva**, and re-introducing **Heidi** with enhanced collaborative functionality. Together, these tools are integrated into a new, automated workflow to make your post-campaign analysis faster and more strategic.</p>
+        </header>
+
+        <section id="tools" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">Meet Your AI Assistants</h2>
+            <p class="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
+                Discover the core function of each AI tool and how they can be leveraged, either individually or in powerful combination, throughout your reporting process.
+            </p>
+            
+            <div class="flex flex-col items-center justify-center gap-8 max-w-5xl mx-auto">
+                
+                <!-- Sväva Card -->
+                <div id="svava-card" class="tool-card cursor-pointer p-8 bg-white rounded-xl border-2 border-transparent w-full" data-tool="svava">
+                    <div>
+                        <h3 class="text-3xl font-bold mb-2" style="color: #4A90E2;"><span class="font-extrabold tracking-tight underline">Sväva</span>: Your PCR Report's Core AI Assistant</h3>
+                        <div class="visual-box">
+                            <div class="pcr-template-mock mb-2">
+                                <div class="header-bar"></div>
+                                <div class="content-line"></div>
+                                <div class="content-line"></div>
+                                <div class="content-line"></div>
+                            </div>
+                            <span class="text-xl font-semibold">New PCR Report</span>
+                            <span class="text-3xl my-2 text-gray-500">➕</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-4xl text-blue-500">📁</span> <!-- Folder emoji for Svava -->
+                                <span class="text-lg font-semibold">AI Driven Insights</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-lg mt-4">
+                            **Sväva** is built strictly and solely for generating and populating insights directly into the new PCR report template. It is the first AI tool you should tap into for all PCR report insights, ensuring automation right where you need it.
+                        </p>
+                    </div>
+                    <p class="text-gray-500 mt-4 text-sm">Click to learn more about Sväva's direct integration and capabilities.</p>
+                </div>
+
+                <!-- Visual flow connector -->
+                <div class="flex flex-col items-center justify-center my-4">
+                    <span class="text-5xl text-gray-400 mb-2">⬇️</span>
+                    <p class="text-lg text-gray-600 text-center font-semibold">Next Step (if choosing AI for deeper analysis):</p>
+                    <p class="text-sm text-gray-500 text-center mt-1">(Heidi can also be used after any other PCR insight population method)</p>
+                </div>
+
+                <!-- Heidi Card -->
+                <div id="heidi-card" class="tool-card cursor-pointer p-8 bg-white rounded-xl border-2 border-transparent w-full" data-tool="heidi">
+                    <div>
+                        <h3 class="text-3xl font-bold mb-2" style="color: #50E3C2;"><span class="font-extrabold tracking-tight underline">Heidi</span>: Your Integrated Reporting Expertise & Knowledge Center</h3>
+                        <div class="visual-box">
+                            <span class="text-4xl text-green-500 mb-2">🧠</span> <!-- Brain emoji for Heidi -->
+                            <p class="font-semibold text-xl">Advanced Analysis & Strategy</p>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <span class="text-lg text-gray-600">Reports</span>
+                                <span class="text-xl text-gray-400">↔️</span>
+                                <span class="text-lg text-gray-600">Emails</span>
+                                <span class="text-xl text-gray-400">↔️</span>
+                                <span class="text-lg text-gray-600">Pitches</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-lg mt-4">
+                            **Heidi** is your expert AI for deeper analysis, strategic data story-crafting, and incremental pitch support. It's leveraged *after* a PCR report (with Sväva's insights or any other approach you chose to populate insights) is complete, or for analysis of *any* data report.
+                        </p>
+                        <p class="text-gray-600 text-lg mt-2">
+                            **Key Distinction:** While Heidi can analyze completed reports and extract takeaways, **insight generation that directly populates into the PCR report presentation is only a feature that Sväva is capable of delivering.**
+                        </p>
+                    </div>
+                    <p class="text-gray-500 mt-4 text-sm">Click to explore Heidi's advanced analytical and strategic functions.</p>
+                </div>
+            </div>
+
+            <div id="tool-details-container" class="mt-8 max-w-4xl mx-auto min-h-[200px] bg-white p-6 rounded-xl shadow-sm transition-opacity duration-300 opacity-0">
+                <div id="tool-details-content"></div>
+            </div>
+        </section>
+
+        <section id="workflows">
+            <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">Interactive Workflow Explorer</h2>
+            <p class="text-center text-gray-600 mb-10 max-w-3xl mx-auto">Explore how our new AI tools can revolutionize your process and save valuable time, starting from the automatically generated PCR report.</p>
+
+            <div class="mb-10 p-6 bg-blue-50 border-l-4 border-blue-400 rounded-lg text-center max-w-3xl mx-auto">
+                <p class="text-blue-800 font-semibold text-xl mb-2">Starting Point: The New PCR Template</p>
+                <p class="text-blue-700">📄 All workflows begin with your PCR report automatically populated with raw data metrics and charts, delivered directly to your campaign's Slack channel at the end of the flight.</p>
+            </div>
+
+            <div class="flex justify-center space-x-2 sm:space-x-4 mb-12 flex-wrap">
+                <button class="workflow-btn py-2 px-4 rounded-full font-semibold" data-workflow="svava_heidi">🚀 Sväva + Heidi</button>
+                <button class="workflow-btn py-2 px-4 rounded-full font-semibold" data-workflow="svava_acn">⚡ Sväva + ACN</button>
+                <button class="workflow-btn py-2 px-4 rounded-full font-semibold" data-workflow="manual_or_acn">✍️ Manual / ACN Support</button>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 md:p-10 shadow-lg">
+                <div id="workflow-title" class="text-2xl font-bold mb-6 text-center"></div>
+                
+                <div class="flex flex-col lg:flex-row lg:space-x-8">
+                    <div class="lg:w-1/2">
+                        <h4 class="font-bold text-lg mb-4">Process Steps:</h4>
+                        <div id="workflow-steps" class="space-y-4"></div>
+                    </div>
+                    <div class="lg:w-1/2 mt-8 lg:mt-0">
+                        <div class="flex justify-around items-center mb-4">
+                            <div class="text-center">
+                                <span class="text-lg font-bold text-gray-700">Time Saved:</span>
+                                <p id="time-saved" class="text-3xl font-bold text-green-600">0 Days</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-lg font-bold text-gray-700">Total Estimated Completion:</span>
+                                <p id="total-time" class="text-3xl font-bold text-blue-600">0.0 Days</p>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 pt-6 border-t">
+                     <h4 class="font-bold text-lg mb-2">Key Benefits:</h4>
+                     <p id="workflow-benefits" class="text-gray-700"></p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        const toolData = {
+            svava: {
+                title: "Sväva: Your PCR Report's Core AI Assistant",
+                color: "#4A90E2",
+                description: "Sväva is meticulously developed to directly integrate with our new PCR template. Its core function is to automate the generation and consolidation of insights *within the actual PCR report deck*. Its code is specifically written to populate text and insights directly into the report, making it an indispensable component of the new, efficient workflow."
+            },
+            heidi: {
+                title: "Heidi: Your Integrated Reporting Expertise & Knowledge Center",
+                color: "#50E3C2",
+                description: "Heidi is a separate, specialized AI assistant focused on advanced data analysis and strategic recommendations. It excels at providing next-level analysis, identifying upsell opportunities by leveraging Sväva-completed reports, and crafting client-ready communications. Heidi transforms data into compelling narratives and actionable strategies. While Heidi can analyze completed reports and extract takeaways, insight generation that directly populates into the PCR report presentation is only a feature that Sväva is capable of delivering."
+            }
+        };
+
+        const workflowData = {
+            svava_heidi: {
+                title: "Recommended: The Full-Circle AI Workflow",
+                steps: [
+                    { icon: "📄", text: "Start with the raw data PCR from Slack." },
+                    { icon: "✨", text: "<strong>Sväva</strong> automatically populates the report with key insights." },
+                    { icon: "🧠", text: "<strong>Heidi</strong> analyzes the Sväva-completed report for deeper strategy." },
+                    { icon: "📧", text: "Heidi helps draft upsell pitches and client-facing emails." },
+                    { icon: "✅", text: "Final, strategy-rich report and outreach are ready." }
+                ],
+                benefits: "Maximum efficiency and strategic depth. This path provides full-circle automation from initial data to client-ready, data-driven narratives and upsell opportunities.",
+                time: 0.5 
+            },
+            svava_acn: {
+                title: "The Hybrid Workflow: AI-Powered Insights + Human QA",
+                 steps: [
+                    { icon: "📄", text: "Start with the raw data PCR from Slack." },
+                    { icon: "✨", text: "<strong>Sväva</strong> automatically populates the report with key insights." },
+                    { icon: "👨‍💻", text: "Send the Sväva-completed report to Accenture for QA, formatting, and screenshots." },
+                    { icon: "👍", text: "Receive the polished and QA'd report." }
+                ],
+                benefits: "A significant time-saver. Sväva bypasses the typical 5-7 day insight generation process. While ACN review still takes ~2 days, the overall timeline is dramatically reduced.",
+                time: 2
+            },
+            manual_or_acn: {
+                title: "Flexible Workflow: Manual or ACN Support",
+                steps: [
+                    { icon: "📄", text: "Start with the raw data PCR from Slack." },
+                    { icon: "💡", text: "<strong>Option 1 (Manual):</strong> Manually add all insights, key takeaways, recommendations, and polish formatting/visuals." },
+                    { icon: "➡️", text: "<strong>Option 2 (ACN):</strong> Send the raw PCR directly to Accenture for insight population, QA (SPAN data, general checks), and custom edits (e.g., multi-opportunity wrap report, decks before campaign end)." },
+                    { icon: "🗓️", text: "Final report delivered after manual effort or ACN's SLA (max 7 business days)." }
+                ],
+                benefits: "Offers flexibility for CSMs to manage the process directly or leverage ACN's expertise. The 7-day SLA allows for custom edits, and with automation handling core metrics, expect stronger adherence and potential reductions for less complex reports.",
+                time: 7 
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const toolCards = document.querySelectorAll('.tool-card');
+            const detailsContainer = document.getElementById('tool-details-container');
+            const detailsContent = document.getElementById('tool-details-content');
+            let activeTool = null;
+
+            toolCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const toolName = card.dataset.tool;
+                    
+                    if (activeTool === toolName) {
+                        activeTool = null;
+                        detailsContainer.style.opacity = 0;
+                        card.classList.remove('active');
+                        card.style.borderColor = 'transparent';
+                    } else {
+                        activeTool = toolName;
+                        const data = toolData[toolName];
+                        
+                        detailsContent.innerHTML = `
+                            <h4 class="text-xl font-bold mb-3" style="color: ${data.color};">${data.title}</h4>
+                            <p class="text-gray-700">${data.description}</p>
+                        `;
+                        detailsContainer.style.opacity = 1;
+                        
+                        toolCards.forEach(c => {
+                            c.classList.remove('active');
+                            c.style.borderColor = 'transparent';
+                        });
+                        card.classList.add('active');
+                        card.style.borderColor = data.color;
+                    }
+                });
+            });
+
+            const workflowBtns = document.querySelectorAll('.workflow-btn');
+            const workflowTitle = document.getElementById('workflow-title');
+            const workflowStepsContainer = document.getElementById('workflow-steps');
+            const workflowBenefits = document.getElementById('workflow-benefits');
+            const timeSavedDisplay = document.getElementById('time-saved');
+            const totalTimeDisplay = document.getElementById('total-time');
+            let activeWorkflowBtn = null;
+            
+            const ctx = document.getElementById('timeChart').getContext('2d');
+            const timeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Estimated Days',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(74, 144, 226, 0.6)',
+                            'rgba(80, 227, 194, 0.6)',
+                            'rgba(189, 195, 199, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(74, 144, 226, 1)',
+                            'rgba(80, 227, 194, 1)',
+                            'rgba(189, 195, 199, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Days'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            function updateWorkflow(workflowKey) {
+                const data = workflowData[workflowKey];
+                workflowTitle.textContent = data.title;
+                
+                workflowStepsContainer.innerHTML = '';
+                data.steps.forEach((step, index) => {
+                    const stepEl = document.createElement('div');
+                    stepEl.className = 'workflow-step flex items-start space-x-4';
+                    stepEl.style.transitionDelay = `${index * 100}ms`;
+                    stepEl.innerHTML = `
+                        <div class="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-lg">${step.icon}</div>
+                        <div class="pt-1 text-gray-700">${step.text}</div>
+                    `;
+                    workflowStepsContainer.appendChild(stepEl);
+                    setTimeout(() => stepEl.classList.add('visible'), 50);
+                });
+
+                workflowBenefits.textContent = data.benefits;
+                
+                timeChart.data.labels = ['Sväva + Heidi', 'Sväva + ACN', 'Manual / ACN Support']; 
+                timeChart.data.datasets[0].data = [
+                    workflowData.svava_heidi.time, 
+                    workflowData.svava_acn.time, 
+                    workflowData.manual_or_acn.time 
+                ];
+                
+                const baseBackgroundColors = [
+                    'rgba(74, 144, 226, 0.6)', 
+                    'rgba(80, 227, 194, 0.6)', 
+                    'rgba(189, 195, 199, 0.6)'  
+                ];
+                const baseBorderColors = [
+                    'rgba(74, 144, 226, 1)',
+                    'rgba(80, 227, 194, 1)',
+                    'rgba(189, 195, 199, 1)'
+                ];
+
+                const currentBackgroundColors = baseBackgroundColors.map(c => c.replace('0.6', '0.2'));
+                const currentBorderColors = baseBorderColors.map(c => c.replace('1', '0.4'));
+
+                let selectedIndex = -1;
+                if (workflowKey === 'svava_heidi') {
+                    selectedIndex = 0;
+                } else if (workflowKey === 'svava_acn') {
+                    selectedIndex = 1;
+                } else if (workflowKey === 'manual_or_acn') { 
+                    selectedIndex = 2;
+                }
+
+                if (selectedIndex !== -1) {
+                    currentBackgroundColors[selectedIndex] = baseBackgroundColors[selectedIndex];
+                    currentBorderColors[selectedIndex] = baseBorderColors[selectedIndex];
+                }
+
+                timeChart.data.datasets[0].backgroundColor = currentBackgroundColors;
+                timeChart.data.datasets[0].borderColor = currentBorderColors;
+                timeChart.update();
+
+                // Update time saved and total time displays
+                const maxTime = workflowData.manual_or_acn.time; // Max time is from the longest workflow
+                const currentTime = data.time;
+                const savedTime = maxTime - currentTime;
+
+                timeSavedDisplay.textContent = `${savedTime} Days`;
+                totalTimeDisplay.textContent = `${currentTime} Days`;
+            }
+
+            workflowBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const workflowKey = btn.dataset.workflow;
+                    updateWorkflow(workflowKey);
+
+                    if (activeWorkflowBtn) {
+                        activeWorkflowBtn.classList.remove('bg-gray-800', 'text-white');
+                        activeWorkflowBtn.classList.add('bg-gray-200', 'text-gray-700');
+                    }
+                    btn.classList.add('bg-gray-800', 'text-white');
+                    btn.classList.remove('bg-gray-200', 'text-gray-700');
+                    activeWorkflowBtn = btn;
+                });
+            });
+
+            workflowBtns[0].click(); // Initialize with the first workflow selected
+        });
+    </script>
+
+</body>
+</html>
